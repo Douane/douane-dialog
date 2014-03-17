@@ -58,6 +58,74 @@ GtkQuestionWindow::~GtkQuestionWindow(void)
   pthread_mutex_destroy(&mutex);
 }
 
+void GtkQuestionWindow::add_activity(const NetworkActivity * activity)
+{
+  // This boolean is used as a kind of state machine
+  // in order to allow actions only when having received at least one activity
+  if (!this->has_received_activities)
+    this->has_received_activities = true;
+
+  if (this->accept_new_activities)
+  {
+    // Prevent to create 2 tabs for the same application if a lot of packets are coming in once
+    ThreadLock thread_lock(mutex);
+
+    std::map<std::string, const NetworkActivity*>::const_iterator it = this->unknown_applications.find(activity->executable_sha256);
+
+    // The NetworkActivity->Process point to an unknown application
+    if (it == this->unknown_applications.end())
+    {
+      // Register the new unknown application
+      this->unknown_applications.insert(std::make_pair(activity->executable_sha256, activity));
+
+      // Create a box in a new tab of the Gtk::Notebook
+      Gtk::manage(new GtkBoxUnknownApplication(activity))->append_to_notebook(this->m_Notebook);
+
+      // Enqueue a request to unhide the question window
+      this->unhide();
+    }
+  }
+}
+
+void GtkQuestionWindow::after_validate_rule(const NetworkActivity * activity, bool allowed)
+{
+  this->new_rule_validated(activity, allowed);
+}
+
+bool GtkQuestionWindow::hide_question_window(void)
+{
+  // Reject all new activities during the time we hide the window
+  this->accept_new_activities = false;
+
+  // It is mandatory to call hold() on the application in order to not close it
+  this->application->hold();
+  this->hide();
+
+  // Allow again to receive activities (will unhide the question window)
+  this->accept_new_activities = true;
+
+  // Stop call to that method from Glib::signal_idle()
+  return false;
+}
+
+bool GtkQuestionWindow::show_question_window(void)
+{
+  // Ensure the window is not alreadu visible
+  if (!this->get_visible())
+    this->set_visible();
+  return false;
+}
+
+void GtkQuestionWindow::forget_unknown_application(const std::string &executable_sha256)
+{
+  std::map<std::string, const NetworkActivity*>::iterator it = this->unknown_applications.find(executable_sha256);
+  if (it != this->unknown_applications.end())
+  {
+    // Remove the unknown application from its SHA256
+    this->unknown_applications.erase(it);
+  }
+}
+
 bool GtkQuestionWindow::on_visibility_notify_event(GdkEventVisibility* event)
 {
   // That boolean is used to determine if the window is visible or not
@@ -104,74 +172,6 @@ void GtkQuestionWindow::on_about_dialog_response(int response_id)
      (response_id == Gtk::RESPONSE_CANCEL) )
   {
     this->m_Dialog.hide();
-  }
-}
-
-void GtkQuestionWindow::after_validate_rule(const NetworkActivity * activity, bool allowed)
-{
-  this->new_rule_validated(activity, allowed);
-}
-
-bool GtkQuestionWindow::hide_question_window(void)
-{
-  // Reject all new activities during the time we hide the window
-  this->accept_new_activities = false;
-
-  // It is mandatory to call hold() on the application in order to not close it
-  this->application->hold();
-  this->hide();
-
-  // Allow again to receive activities (will unhide the question window)
-  this->accept_new_activities = true;
-
-  // Stop call to that method from Glib::signal_idle()
-  return false;
-}
-
-bool GtkQuestionWindow::show_question_window(void)
-{
-  // Ensure the window is not alreadu visible
-  if (!this->get_visible())
-    this->set_visible();
-  return false;
-}
-
-void GtkQuestionWindow::add_activity(const NetworkActivity * activity)
-{
-  // This boolean is used as a kind of state machine
-  // in order to allow actions only when having received at least one activity
-  if (!this->has_received_activities)
-    this->has_received_activities = true;
-
-  if (this->accept_new_activities)
-  {
-    // Prevent to create 2 tabs for the same application if a lot of packets are coming in once
-    ThreadLock thread_lock(mutex);
-
-    std::map<std::string, const Process*>::const_iterator it = this->unknown_applications.find(activity->process->get_executable_sha256());
-
-    // The NetworkActivity->Process point to an unknown application
-    if (it == this->unknown_applications.end())
-    {
-      // Register the new unknown application
-      this->unknown_applications.insert(std::make_pair(activity->process->get_executable_sha256(), activity->process));
-
-      // Create a box in a new tab of the Gtk::Notebook
-      Gtk::manage(new GtkBoxUnknownApplication(activity))->append_to_notebook(this->m_Notebook);
-
-      // Enqueue a request to unhide the question window
-      this->unhide();
-    }
-  }
-}
-
-void GtkQuestionWindow::forget_unknown_application(const Rule * rule)
-{
-  std::map<std::string, const Process*>::iterator it = this->unknown_applications.find(rule->executable_sha256);
-  if (it != this->unknown_applications.end())
-  {
-    // Remove the unknown application from its SHA256
-    this->unknown_applications.erase(it);
   }
 }
 

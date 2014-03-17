@@ -10,7 +10,9 @@ OBJ=dbus/dbus_client.o \
 	gtk/gtk_box_unknown_application.o \
 	gtk/gtk_process_icon.o \
 	gtk/gtk_question_window.o \
-	main.o
+	main.o \
+	network_activity.o \
+	tools.o
 
 INSTALL=/usr/bin/install -c
 BINDIR=$(DESTDIR)/opt/douane

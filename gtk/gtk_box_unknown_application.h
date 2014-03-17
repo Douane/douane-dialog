@@ -4,9 +4,8 @@
 #include <boost/signals2.hpp>
 #include <log4cxx/logger.h>
 #include <gtkmm.h>
-#include "../network_activity.h"
-#include "../rule.h"
 #include "gtk_application_icon_sublimer.h"
+#include "../network_activity.h"
 
 class GtkBoxUnknownApplication : public Gtk::Box
 {
@@ -33,17 +32,13 @@ class GtkBoxUnknownApplication : public Gtk::Box
   private:
     log4cxx::LoggerPtr                  logger;
     NetworkActivity                     activity;
-    boost::signals2::connection         hostname_updated_signal;
     Gtk::Notebook *                     notebook;
-    Gtk::Label *                        label_hostname_or_ip_destination;
     bool                                destroying;
 
     void                                build_box(void);
     void                                on_allow_button_clicked(void);
     void                                on_deny_button_clicked(void);
     void                                make_rule_and_remove_box(bool allowed);
-    bool                                update_application_hostname_or_ip_destination_idle(void);
-    void                                update_application_hostname_or_ip_destination(const std::string &ip_address, const std::string &hostname);
 
     static signalNewRuleValidated       new_rule_validated;
 };

@@ -1,13 +1,30 @@
 #include "dbus_client.h"
 
-Douane::DBusClient::DBusClient(DBus::Connection &connection, const char *path, const char *name)
-: logger(log4cxx::Logger::getLogger("Douane::DBusClient")),
- DBus::ObjectProxy(connection, path, name)
+DBusClient::DBusClient(DBus::Connection &connection, const char *path, const char *name)
+: DBus::ObjectProxy(connection, path, name),
+  logger(log4cxx::Logger::getLogger("DBusClient"))
 {
 
 }
 
-Douane::DBusClient::~DBusClient()
+DBusClient::~DBusClient()
 {
 
 }
+
+void DBusClient::push_new_rule(const NetworkActivity * activity, bool allowed)
+{
+
+}
+
+void DBusClient::start(void)
+{
+
+}
+
+boost::signals2::connection DBusClient::on_new_activity_received_connect(const signalNewActivityReceivedType &slot)
+{
+  return DBusClient::new_activity_received.connect(slot);
+}
+
+DBusClient::signalNewActivityReceived DBusClient::new_activity_received;

@@ -8,6 +8,7 @@
 
 // Internal includes
 #include "dbus/dbus_client.h"
+#include "gtk/gtk_question_window.h"
 // Log4cxx includes
 #include <log4cxx/logger.h>
 #include <log4cxx/helpers/pool.h>
@@ -28,6 +29,8 @@ const char *  log_file_path = "/var/log/douane.log";
 
 // Initialize the logger for the current file
 log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("Main");
+
+DBus::BusDispatcher dispatcher;
 
 /*
 ** Handle the exit signal
@@ -77,6 +80,18 @@ void do_from_options(std::string option, const char * optarg)
   {
     enabled_debug = true;
   }
+}
+
+/*
+**  In order to accept arguments when initializing application with Gtk::Application::create
+*  the flag Gio::APPLICATION_HANDLES_COMMAND_LINE has been passed and so we have to implement
+*  that callback method that will just activate the application and don't do anything as arguments
+*  are supported by getopt.h
+*/
+int on_cmd(const Glib::RefPtr<Gio::ApplicationCommandLine> &, Glib::RefPtr<Gtk::Application> &application)
+{
+  application->activate();
+  return 0;
 }
 
 int main(int argc, char * argv[])
@@ -157,25 +172,46 @@ int main(int argc, char * argv[])
     /*
     ** ~~~~ Global class initializations ~~~~
     */
+    LOG4CXX_DEBUG(logger, "Gtk::Application::create()");
+    // Standard Gtkmm initialization of the application that will be used to execute the GTK stuff
+    Glib::RefPtr<Gtk::Application> application = Gtk::Application::create(
+      argc,
+      argv,
+      "org.zedroot.Douane.Application",
+      Gio::APPLICATION_HANDLES_COMMAND_LINE | Gio::APPLICATION_IS_SERVICE
+    );
+    application->signal_command_line().connect(sigc::bind(sigc::ptr_fun(on_cmd), application), false);
+
+    LOG4CXX_DEBUG(logger, "Initializing GTK window");
+    GtkQuestionWindow     gtk_question_window(application);
+
     LOG4CXX_DEBUG(logger, "Initializing Douane::DBusClient");
-    Douane::DBusClient   dbus_client;
+    DBus::default_dispatcher = &dispatcher;
+    DBus::Connection bus = DBus::Connection::SessionBus();
+    DBusClient            dbus_client(bus, "/org/zedroot/Douane", "org.zedroot.Douane");
     /*
     **/
 
     /*
     ** ~~~~ Signal connexions ~~~~
     */
-    // TODO: Connect a signal when something has been retreived from D-Bus client
-    //       to popup the GTK dialog.
+    // When Douane::DBusClient emit new_activity_received signal then fire GtkQuestionWindow::add_activity
+    dbus_client.on_new_activity_received_connect(boost::bind(&GtkQuestionWindow::add_activity, &gtk_question_window, _1));
+
+    // When GtkQuestionWindow emit new_rule_validated signal then fire DBusClient::push_new_rule
+    gtk_question_window.on_new_rule_validated_connect(boost::bind(&DBusClient::push_new_rule, &dbus_client, _1, _2));
     /*
     **/
 
     /*
     ** ~~~~ Dialog starting ~~~~
     */
+    // Start into a thread the D-Bus client
+    LOG4CXX_DEBUG(logger, "Starting D-Bus client");
+    dbus_client.start();
 
-    LOG4CXX_DEBUG(logger, "Dialog is dying...");
-    return EXIT_SUCCESS;
+    LOG4CXX_DEBUG(logger, "Entering GTK loop");
+    return application->run(gtk_question_window);
 
   } catch(const std::exception &e)
   {
