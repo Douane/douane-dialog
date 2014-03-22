@@ -5,9 +5,11 @@
 #include <getopt.h>
 #include <boost/bind.hpp>
 #include <signal.h>
+#include <fstream>
 
 // Internal includes
 #include "dbus/dbus_client.h"
+#include "dbus/douane.h"
 #include "gtk/gtk_question_window.h"
 // Log4cxx includes
 #include <log4cxx/logger.h>
@@ -25,6 +27,8 @@
 // Daemon flags and paths
 bool          enabled_debug = false;
 bool          has_to_daemonize = false;
+bool          has_to_write_pid_file = false;
+const char *  pid_file_path = "/var/run/douane-dialogd.pid";
 const char *  log_file_path = "/var/log/douane.log";
 
 // Initialize the logger for the current file
@@ -63,15 +67,37 @@ void do_help(void)
   exit(1);
 }
 
+/*
+** Create the PID file and write the PID
+*
+*  This is executed when passing argument -p
+*/
+void do_pidfile(const char * path)
+{
+  std::ofstream pid_file;
+  pid_file.open(path);
+  if(!pid_file.is_open())
+  {
+    printf("Unable to create the PID file: %s\n", strerror(errno));
+    exit(-1);
+  }
+  pid_file << getpid() << std::endl;
+  pid_file.close();
+}
+
 void do_from_options(std::string option, const char * optarg)
 {
   if (option == "version")
   {
     do_version();
-  }
-  else if (option == "help")
+  } else if (option == "help")
   {
     do_help();
+  } else if (option == "pid-file")
+  {
+    has_to_write_pid_file = true;
+    if (optarg)
+      pid_file_path = optarg;
   } else if (option == "log-file")
   {
     if (optarg)
@@ -110,12 +136,13 @@ int main(int argc, char * argv[])
   {
     {"version",  no_argument,       0, 'v'},
     {"help",     no_argument,       0, 'h'},
+    {"pid-file", optional_argument, 0, 'p'},
     {"log-file", required_argument, 0, 'l'},
     {"debug",    no_argument      , 0, 'D'},
     {0,0,0,0}
   };
   int option_index = 0;
-  while ((c = getopt_long(argc, argv, "vhl:D", long_options, &option_index)) != -1)
+  while ((c = getopt_long(argc, argv, "vhp:l:D", long_options, &option_index)) != -1)
   {
     switch (c)
     {
@@ -127,6 +154,9 @@ int main(int argc, char * argv[])
         break;
       case 'h':
         do_from_options("help", optarg);
+        break;
+      case 'p':
+        do_from_options("pid-file", optarg);
         break;
       case 'l':
         do_from_options("log-file", optarg);
@@ -149,7 +179,7 @@ int main(int argc, char * argv[])
   *  Appending logs to the file /var/log/douane.log
   */
   log4cxx::PatternLayoutPtr pattern = new log4cxx::PatternLayout(
-    enabled_debug ? "%d{dd/MM/yyyy HH:mm:ss} | %5p | [%F::%c:%L]: %m%n" : "%d{dd/MM/yyyy HH:mm:ss} %5p: %m%n"
+    enabled_debug ? "%d{dd/MM/yyyy HH:mm:ss} | dialog | %5p | [%F::%c:%L]: %m%n" : "%d{dd/MM/yyyy HH:mm:ss} %5p: %m%n"
   );
   log4cxx::FileAppender * fileAppender = new log4cxx::FileAppender(
     log4cxx::LayoutPtr(pattern),
@@ -164,6 +194,13 @@ int main(int argc, char * argv[])
   */
 
   try {
+
+   if (has_to_write_pid_file)
+    {
+      do_pidfile(pid_file_path);
+      LOG4CXX_INFO(logger, "A pid file with PID " << getpid() << " is created at " << pid_file_path);
+    }
+
     LOG4CXX_INFO(logger, "The log file is " << log_file_path);
 
     if (enabled_debug)
@@ -177,7 +214,7 @@ int main(int argc, char * argv[])
     Glib::RefPtr<Gtk::Application> application = Gtk::Application::create(
       argc,
       argv,
-      "org.zedroot.Douane.Application",
+      "org.zedroot.DouaneApplication",
       Gio::APPLICATION_HANDLES_COMMAND_LINE | Gio::APPLICATION_IS_SERVICE
     );
     application->signal_command_line().connect(sigc::bind(sigc::ptr_fun(on_cmd), application), false);
@@ -185,18 +222,17 @@ int main(int argc, char * argv[])
     LOG4CXX_DEBUG(logger, "Initializing GTK window");
     GtkQuestionWindow     gtk_question_window(application);
 
-    LOG4CXX_DEBUG(logger, "Initializing Douane::DBusClient");
-    DBus::default_dispatcher = &dispatcher;
-    DBus::Connection bus = DBus::Connection::SessionBus();
-    DBusClient            dbus_client(bus, "/org/zedroot/Douane", "org.zedroot.Douane");
+    LOG4CXX_DEBUG(logger, "Initializing DBusClient");
+    DBusClient            dbus_client;
+    dbus_client.register_to_daemon();
     /*
     **/
 
     /*
     ** ~~~~ Signal connexions ~~~~
     */
-    // When Douane::DBusClient emit new_activity_received signal then fire GtkQuestionWindow::add_activity
-    dbus_client.on_new_activity_received_connect(boost::bind(&GtkQuestionWindow::add_activity, &gtk_question_window, _1));
+    // When DBusClient emit new_activity_received signal then fire GtkQuestionWindow::add_activity
+    Douane::on_new_activity_received_connect(boost::bind(&GtkQuestionWindow::add_activity, &gtk_question_window, _1));
 
     // When GtkQuestionWindow emit new_rule_validated signal then fire DBusClient::push_new_rule
     gtk_question_window.on_new_rule_validated_connect(boost::bind(&DBusClient::push_new_rule, &dbus_client, _1, _2));

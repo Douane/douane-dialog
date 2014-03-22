@@ -60,6 +60,8 @@ GtkQuestionWindow::~GtkQuestionWindow(void)
 
 void GtkQuestionWindow::add_activity(const NetworkActivity * activity)
 {
+  LOG4CXX_DEBUG(logger, "GtkQuestionWindow::add_activity...");
+
   // This boolean is used as a kind of state machine
   // in order to allow actions only when having received at least one activity
   if (!this->has_received_activities)
