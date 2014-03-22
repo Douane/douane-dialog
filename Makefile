@@ -17,7 +17,8 @@ OBJ=dbus/dbus_client.o \
 	tools.o
 
 INSTALL=/usr/bin/install -c
-BINDIR=$(DESTDIR)/usr/local/bin
+BINDIR=$(DESTDIR)/opt/douane/bin
+DATADIR=$(DESTDIR)/opt/douane/data
 PIDSDIR=$(DESTDIR)/opt/douane/pids
 EXEC=douane-dialog
 
@@ -34,6 +35,6 @@ clean:
 
 install: $(EXEC)
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
-	test -d $(DESTDIR)/usr/share/dbus-1/services/ || mkdir -p $(DESTDIR)/usr/share/dbus-1/services/
+	test -d $(DATADIR) || mkdir -p $(DATADIR)
 	install -m 0500 $(EXEC) $(BINDIR)
-	install -m 0644 services/org.zedroot.DouaneDialog.service $(DESTDIR)/usr/share/dbus-1/services/
+	install -m 0755 data/* $(DATADIR)

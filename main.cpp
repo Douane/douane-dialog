@@ -123,6 +123,7 @@ int on_cmd(const Glib::RefPtr<Gio::ApplicationCommandLine> &, Glib::RefPtr<Gtk::
 int main(int argc, char * argv[])
 {
   // CTRL + C catcher
+  signal(SIGTERM, handler);
   signal(SIGINT, handler);
 
   // Force the nice value to -20 (urgent)
