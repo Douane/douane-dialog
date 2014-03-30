@@ -36,5 +36,5 @@ clean:
 install: $(EXEC)
 	test -d $(BINDIR) || mkdir -p $(BINDIR)
 	test -d $(DATADIR) || mkdir -p $(DATADIR)
-	install -m 0500 $(EXEC) $(BINDIR)
+	install -m 0555 $(EXEC) $(BINDIR)
 	install -m 0755 data/* $(DATADIR)
