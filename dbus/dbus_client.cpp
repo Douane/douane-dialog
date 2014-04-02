@@ -18,33 +18,8 @@ DBusClient::DBusClient(void)
 DBusClient::~DBusClient(void)
 {
   LOG4CXX_DEBUG(logger, "Shutting down D-Bus client..");
-
-  // In the case we have an ID
-  if (this->process_id.empty() == false)
-  {
-    LOG4CXX_DEBUG(logger, "Unregistering ID " << this->process_id << "...");
-    // Unregister from the daemon
-    this->douane->UnregisterDialogProcess(this->process_id);
-  }
-
-  LOG4CXX_DEBUG(logger, "Shutting down D-Bus server..");
   if (this->started)
     this->dispatcher.leave();
-}
-
-bool DBusClient::register_to_daemon(void)
-{
-  LOG4CXX_DEBUG(logger, "Registering to the daemon as dialog process...");
-
-  this->process_id = this->douane->RegisterAsDialogProcess();
-  if (this->process_id.empty())
-  {
-    LOG4CXX_ERROR(logger, "Failed to register.");
-    return false;
-  } else {
-    LOG4CXX_DEBUG(logger, "Successfully registered with ID " << this->process_id << ".");
-    return true;
-  }
 }
 
 void DBusClient::execute(void)

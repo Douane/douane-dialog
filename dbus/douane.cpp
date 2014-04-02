@@ -12,9 +12,10 @@ Douane::~Douane()
   LOG4CXX_DEBUG(logger, "Douane::~Douane()");
 }
 
-void Douane::push_new_rule(const NetworkActivity * activity, bool allowed)
+void Douane::push_new_rule(const NetworkActivity * activity, bool allow)
 {
-  LOG4CXX_DEBUG(logger, "Douane::push_new_rule()");
+  LOG4CXX_DEBUG(logger, "Douane::push_new_rule(" << activity->executable_sha256 << ", " << (allow ? "true" : "false") << ")");
+  this->CreateRule(activity->executable_sha256, allow);
 }
 
 void Douane::NewActivityToBeValidated(const ::DBus::Struct< std::string, std::string, std::string, std::string >& activity)

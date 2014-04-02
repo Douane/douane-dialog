@@ -207,6 +207,8 @@ int main(int argc, char * argv[])
     if (enabled_debug)
       LOG4CXX_DEBUG(logger, "The debug mode is enabled");
 
+    LOG4CXX_DEBUG(logger, "GTKmm version: " << GTKMM_MAJOR_VERSION << "." << GTKMM_MINOR_VERSION << "." << GTKMM_MICRO_VERSION);
+
     /*
     ** ~~~~ Global class initializations ~~~~
     */
@@ -216,7 +218,11 @@ int main(int argc, char * argv[])
       argc,
       argv,
       "org.zedroot.DouaneApplication",
+#if GTKMM_MAJOR_VERSION == 3 && GTKMM_MINOR_VERSION >= 10
+      Gio::APPLICATION_HANDLES_COMMAND_LINE
+#else
       Gio::APPLICATION_HANDLES_COMMAND_LINE | Gio::APPLICATION_IS_SERVICE
+#endif
     );
     application->signal_command_line().connect(sigc::bind(sigc::ptr_fun(on_cmd), application), false);
 
@@ -225,7 +231,6 @@ int main(int argc, char * argv[])
 
     LOG4CXX_DEBUG(logger, "Initializing DBusClient");
     DBusClient            dbus_client;
-    dbus_client.register_to_daemon();
     /*
     **/
 

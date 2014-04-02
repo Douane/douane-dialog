@@ -36,7 +36,7 @@ class Douane : public org::zedroot::Douane_proxy,
     /*
     ** Instance methods
     */
-    void                                  push_new_rule(const NetworkActivity * activity, bool allowed);
+    void                                  push_new_rule(const NetworkActivity * activity, bool allow);
     /*
     ** Internal signals methods
     */

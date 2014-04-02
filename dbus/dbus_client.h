@@ -29,8 +29,6 @@ class DBusClient : public Thread
     /*
     ** Instance methods
     */
-    // Register against the Douane daemon as dialog process
-    bool                register_to_daemon(void);
     // Thread body
     void                execute(void);
     // Send to the daemon the user answer (Allow or deny activity)
@@ -41,7 +39,6 @@ class DBusClient : public Thread
     DBus::BusDispatcher dispatcher;
     Douane *            douane;
     bool                started;
-    std::string         process_id;
 };
 
 #endif
