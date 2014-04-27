@@ -1,0 +1,4 @@
+[submodule "dbus/interface"]
+        path = dbus/interface
+        url = https://github.com/Douane/douane-dbus.git
+
