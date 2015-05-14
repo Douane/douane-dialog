@@ -36,13 +36,18 @@ void GtkProcessIcon::set_icon_from_process(const std::string &icon_name, const s
   }
   if (!this->application_large_icon && !this->application_small_icon)
   {
-    if (icon_name == "image-missing")
-    {
-      if (theme->has_icon(icon_name))
+    try {
+      if (icon_name == "image-missing")
       {
-        this->application_large_icon = theme->load_icon(icon_name, APPLICATION_LARGE_ICON_SIZE, Gtk::ICON_LOOKUP_USE_BUILTIN);
-        this->application_small_icon = theme->load_icon(icon_name, APPLICATION_SMALL_ICON_SIZE, Gtk::ICON_LOOKUP_USE_BUILTIN);
+        if (theme->has_icon(icon_name))
+        {
+          this->application_large_icon = theme->load_icon(icon_name, APPLICATION_LARGE_ICON_SIZE, Gtk::ICON_LOOKUP_USE_BUILTIN);
+          this->application_small_icon = theme->load_icon(icon_name, APPLICATION_SMALL_ICON_SIZE, Gtk::ICON_LOOKUP_USE_BUILTIN);
+        }
       }
+    } catch (const Glib::Error &e)
+    {
+      LOG4CXX_ERROR(logger, e.what());
     }
   }
 }
