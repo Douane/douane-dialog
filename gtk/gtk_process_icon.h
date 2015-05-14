@@ -24,6 +24,7 @@ class GtkProcessIcon
     Glib::RefPtr<Gdk::Pixbuf>   get_small_icon_pixbuf(void) const;
 
   private:
+    void                        load_icon(const std::string &name, Glib::RefPtr<Gtk::IconTheme> &theme);
     log4cxx::LoggerPtr          logger;
     Glib::RefPtr<Gdk::Pixbuf>   application_large_icon;
     Glib::RefPtr<Gdk::Pixbuf>   application_small_icon;
