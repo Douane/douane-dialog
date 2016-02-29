@@ -3,6 +3,7 @@
 
 #include <boost/signals2.hpp>
 #include <log4cxx/logger.h>
+#include <gtkmm.h>
 #include <dbus-c++/dbus.h>
 #include "interface/org_zedroot_douane_proxy.h"
 #include "../network_activity.h"
