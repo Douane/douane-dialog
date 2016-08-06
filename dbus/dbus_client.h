@@ -3,6 +3,7 @@
 
 #include <boost/signals2.hpp>
 #include <log4cxx/logger.h>
+#include <gtkmm.h>
 #include <dbus-c++/dbus.h>
 #include "douane.h"
 #include "../thread.h"
