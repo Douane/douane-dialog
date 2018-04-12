@@ -2,7 +2,7 @@ DAEMON_VERSION=$(shell cat VERSION)
 
 CC=g++
 PKGCONFIG=`pkg-config --cflags --libs liblog4cxx dbus-c++-1 gtkmm-3.0`
-CFLAGS=-pedantic -Wall -W -g $(PKGCONFIG) -DDOUANE_VERSION=\"$(DAEMON_VERSION)\"
+CFLAGS=-pedantic -Wall -W -g $(PKGCONFIG) -DDOUANE_VERSION=\"$(DAEMON_VERSION)\" -std=c++11
 LDFLAGS=$(PKGCONFIG) -lboost_signals -lpthread
 
 OBJ=dbus/dbus_client.o \

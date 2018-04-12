@@ -13,7 +13,8 @@ GtkQuestionWindow::GtkQuestionWindow(const Glib::RefPtr<Gtk::Application> &appli
 
   // Define Gtk::Window options
   this->set_title("Douane");
-  this->set_resizable(false);
+  this->set_alwaysOnTop(true);
+  this->set_keep_above(true);
   this->set_size_request(600, 200);
   this->set_position(Gtk::WIN_POS_CENTER);
   Tools tools;
